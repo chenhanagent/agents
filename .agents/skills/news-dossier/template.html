@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{EVENT_TITLE}} — Dossier</title>
+<meta name="description" content="{{EVENT_SUMMARY_ONE_LINE}}">
+<style>
+  /* ── Design tokens ── */
+  :root {
+    --bg:       #0f1117;
+    --surface:  #1a1d27;
+    --surface2: #22263a;
+    --border:   #2d3250;
+    --text:     #e2e8f0;
+    --muted:    #8892a4;
+    --accent:   #6c8cff;
+    /* Evidence badge colors */
+    --confirmed-bg:  #052e16; --confirmed-fg:  #34d399;
+    --attributed-bg: #1e3a5f; --attributed-fg: #93c5fd;
+    --disputed-bg:   #451a03; --disputed-fg:   #fde68a;
+    --social-bg:     #2d1b69; --social-fg:     #c4b5fd;
+    --inference-bg:  #1e293b; --inference-fg:  #94a3b8;
+    --unknown-bg:    #450a0a; --unknown-fg:    #fca5a5;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; line-height: 1.7; }
+  a { color: var(--accent); }
+  a:hover { text-decoration: underline; }
+
+  /* ── Navigation ── */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(15,17,23,0.93); backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 4px;
+    padding: 0 20px; height: 50px; overflow-x: auto;
+  }
+  nav .logo { font-weight: 700; color: var(--accent); margin-right: 12px; white-space: nowrap; font-size: .9rem; }
+  nav a {
+    color: var(--muted); text-decoration: none;
+    padding: 5px 10px; border-radius: 6px; font-size: .82rem; white-space: nowrap;
+    transition: all .15s;
+  }
+  nav a:hover { background: var(--surface2); color: var(--text); }
+
+  /* ── Layout ── */
+  main { max-width: 860px; margin: 0 auto; padding: 40px 20px 100px; }
+  section { margin-bottom: 56px; scroll-margin-top: 64px; }
+  h1 { font-size: 1.75rem; font-weight: 800; line-height: 1.3; margin-bottom: 6px; }
+  h2 { font-size: 1.15rem; font-weight: 700; color: var(--accent); margin: 40px 0 14px; display: flex; align-items: center; gap: 8px; }
+  h2::before { content: ''; display: block; width: 3px; height: 1.1em; background: var(--accent); border-radius: 2px; }
+  h3 { font-size: .95rem; font-weight: 600; margin: 20px 0 8px; }
+  p { color: #cbd5e1; margin-bottom: 10px; font-size: .95rem; }
+
+  /* ── Meta bar ── */
+  .meta { display: flex; flex-wrap: wrap; gap: 14px; margin: 10px 0 28px; font-size: .8rem; color: var(--muted); }
+  .meta span { display: flex; align-items: center; gap: 5px; }
+
+  /* ── Evidence badges ── */
+  .badge {
+    display: inline-block; padding: 1px 8px; border-radius: 999px;
+    font-size: .72rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+    vertical-align: middle; margin-left: 4px;
+  }
+  .badge-confirmed  { background: var(--confirmed-bg);  color: var(--confirmed-fg); }
+  .badge-attributed { background: var(--attributed-bg); color: var(--attributed-fg); }
+  .badge-disputed   { background: var(--disputed-bg);   color: var(--disputed-fg); }
+  .badge-social     { background: var(--social-bg);     color: var(--social-fg); }
+  .badge-inference  { background: var(--inference-bg);  color: var(--inference-fg); }
+  .badge-unknown    { background: var(--unknown-bg);    color: var(--unknown-fg); }
+
+  /* ── Cards ── */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; margin-bottom: 12px; }
+  .card-title { font-weight: 600; font-size: .95rem; margin-bottom: 6px; }
+  .card p { margin-bottom: 0; font-size: .88rem; }
+
+  /* ── Timeline ── */
+  .timeline { padding-left: 24px; position: relative; }
+  .timeline::before { content:''; position:absolute; left:7px; top:0; bottom:0; width:2px; background:var(--border); }
+  .tl-item { position: relative; margin-bottom: 22px; }
+  .tl-dot { position:absolute; left:-21px; top:6px; width:10px; height:10px; border-radius:50%; background:var(--accent); border:2px solid var(--bg); }
+  .tl-date { font-size:.75rem; color:var(--muted); font-family:monospace; }
+  .tl-title { font-weight:600; font-size:.92rem; }
+  .tl-why { font-size:.82rem; color:#94a3b8; margin-top:3px; }
+
+  /* ── Issue matrix ── */
+  .matrix { border:1px solid var(--border); border-radius:10px; overflow:hidden; margin-bottom:18px; }
+  .matrix-title { background:var(--surface2); padding:11px 16px; font-weight:700; font-size:.9rem; border-bottom:1px solid var(--border); }
+  .matrix-grid { display:grid; grid-template-columns:100px 1fr; }
+  .matrix-cell { padding:10px 14px; font-size:.84rem; border-top:1px solid var(--border); }
+  .matrix-label { color:var(--muted); font-size:.75rem; font-weight:600; text-transform:uppercase; letter-spacing:.05em; background:var(--surface2); }
+  .matrix-value { color:#cbd5e1; }
+  .matrix-safe { border-top:1px solid var(--border); padding:10px 14px; background:rgba(52,211,153,.06); font-size:.84rem; color:var(--confirmed-fg); }
+
+  /* ── Stakeholder table ── */
+  table { width:100%; border-collapse:collapse; font-size:.85rem; }
+  th { background:var(--surface2); color:var(--muted); font-size:.75rem; text-transform:uppercase; letter-spacing:.06em; padding:9px 12px; text-align:left; border-bottom:1px solid var(--border); }
+  td { padding:10px 12px; border-bottom:1px solid var(--border); color:#cbd5e1; vertical-align:top; }
+  tr:last-child td { border-bottom:none; }
+
+  /* ── Source register ── */
+  .source-item { padding:10px 0; border-bottom:1px solid var(--border); display:flex; gap:12px; align-items:flex-start; }
+  .source-item:last-child { border-bottom:none; }
+  .source-type { flex-shrink:0; font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.04em; padding:2px 7px; border-radius:4px; background:var(--surface2); color:var(--muted); margin-top:2px; }
+  .source-title { font-size:.88rem; font-weight:600; }
+  .source-meta { font-size:.78rem; color:var(--muted); }
+
+  /* ── Open questions ── */
+  .oq-item { padding:14px 16px; border:1px solid var(--border); border-radius:8px; margin-bottom:10px; }
+  .oq-q { font-weight:600; font-size:.92rem; margin-bottom:6px; }
+  .oq-detail { font-size:.82rem; color:#94a3b8; }
+
+  /* ── Highlights / callouts ── */
+  .callout { padding:14px 18px; border-radius:0 8px 8px 0; margin:16px 0; font-size:.88rem; }
+  .callout-green  { background:rgba(52,211,153,.07); border-left:3px solid #34d399; }
+  .callout-yellow { background:rgba(251,191,36,.07); border-left:3px solid #fbbf24; }
+  .callout-red    { background:rgba(248,113,113,.07); border-left:3px solid #f87171; }
+  .callout-blue   { background:rgba(108,140,255,.07); border-left:3px solid #6c8cff; }
+
+  /* ── Footer / caveats ── */
+  footer { background:var(--surface); border-top:1px solid var(--border); margin-top:60px; padding:24px 20px; font-size:.8rem; color:var(--muted); text-align:center; line-height:1.6; }
+
+  /* ── Legend ── */
+  .legend { display:flex; flex-wrap:wrap; gap:8px; margin:16px 0; }
+
+  @media(max-width:600px) {
+    h1 { font-size:1.35rem; }
+    .matrix-grid { grid-template-columns:80px 1fr; }
+    table { display:block; overflow-x:auto; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <span class="logo">📋 Dossier</span>
+  <a href="#summary">總覽</a>
+  <a href="#known">已確認</a>
+  <a href="#disputed">爭議</a>
+  <a href="#timeline">時間線</a>
+  <a href="#stakeholders">利害關係人</a>
+  <a href="#matrix">爭點矩陣</a>
+  <a href="#sources">來源</a>
+  <a href="#social">社群敘事</a>
+  <a href="#openq">未決問題</a>
+  <a href="#caveats">注意事項</a>
+</nav>
+
+<main>
+
+  <!-- ① Executive Summary -->
+  <section id="summary">
+    <h1>{{EVENT_TITLE}}</h1>
+    <div class="meta">
+      <span>📅 最後更新：{{LAST_UPDATED}}</span>
+      <span>🌐 {{GEOGRAPHIC_SCOPE}}</span>
+      <span>📁 獨立研究整理</span>
+    </div>
+
+    <div class="callout callout-blue">
+      <strong>摘要</strong><br>
+      {{EXECUTIVE_SUMMARY_3_TO_5_SENTENCES}}
+    </div>
+
+    <!-- Evidence legend -->
+    <div class="legend">
+      <span class="badge badge-confirmed">confirmed</span>
+      <span class="badge badge-attributed">attributed</span>
+      <span class="badge badge-disputed">disputed</span>
+      <span class="badge badge-social">social</span>
+      <span class="badge badge-inference">inference</span>
+      <span class="badge badge-unknown">unknown</span>
+    </div>
+  </section>
+
+  <!-- ② What Is Known -->
+  <section id="known">
+    <h2>已確認的事實</h2>
+    <p>以下項目有主要文件、官方聲明或多個獨立來源支撐。</p>
+    <!-- Repeat .card for each confirmed fact -->
+    <div class="card">
+      <div class="card-title">{{FACT_TITLE}} <span class="badge badge-confirmed">confirmed</span></div>
+      <p>{{FACT_DESCRIPTION}} <a href="{{SOURCE_URL}}" target="_blank" rel="noopener">[來源]</a></p>
+    </div>
+  </section>
+
+  <!-- ③ What Is Disputed -->
+  <section id="disputed">
+    <h2>爭議中的主張</h2>
+    <p>以下主張由特定方提出，尚未有獨立主要資料確認。</p>
+    <div class="card">
+      <div class="card-title">{{CLAIM_TITLE}} <span class="badge badge-attributed">attributed</span></div>
+      <p><strong>{{CLAIMANT}}</strong> 表示：{{CLAIM_TEXT}}</p>
+    </div>
+    <div class="card">
+      <div class="card-title">{{COUNTERCLAIM_TITLE}} <span class="badge badge-disputed">disputed</span></div>
+      <p><strong>{{COUNTER_CLAIMANT}}</strong> 主張：{{COUNTERCLAIM_TEXT}}</p>
+    </div>
+  </section>
+
+  <!-- ④ Timeline -->
+  <section id="timeline">
+    <h2>時間線</h2>
+    <div class="timeline">
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-date">{{DATE_1}}</div>
+        <div class="tl-title">{{EVENT_1_TITLE}} <span class="badge badge-confirmed">confirmed</span></div>
+        <div class="tl-why">為何重要：{{WHY_IT_MATTERS_1}}</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-date">{{DATE_2}}</div>
+        <div class="tl-title">{{EVENT_2_TITLE}} <span class="badge badge-attributed">attributed</span></div>
+        <div class="tl-why">為何重要：{{WHY_IT_MATTERS_2}}</div>
+      </div>
+      <!-- Add more .tl-item blocks as needed -->
+    </div>
+  </section>
+
+  <!-- ⑤ Stakeholder Map -->
+  <section id="stakeholders">
+    <h2>利害關係人</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>名稱 / 組織</th>
+          <th>角色</th>
+          <th>利益與動機</th>
+          <th>回應狀態</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>{{ACTOR_1}}</strong></td>
+          <td>{{ROLE_1}}</td>
+          <td>{{INTERESTS_1}}</td>
+          <td>{{RESPONSE_STATUS_1}}</td><!-- responded / silent / represented -->
+        </tr>
+        <tr>
+          <td><strong>{{ACTOR_2}}</strong></td>
+          <td>{{ROLE_2}}</td>
+          <td>{{INTERESTS_2}}</td>
+          <td>{{RESPONSE_STATUS_2}}</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ⑥ Issue Matrix -->
+  <section id="matrix">
+    <h2>爭點矩陣</h2>
+    <!-- Repeat .matrix block for each contested issue -->
+    <div class="matrix">
+      <div class="matrix-title">爭點：{{ISSUE_TITLE}}</div>
+      <div class="matrix-grid">
+        <div class="matrix-cell matrix-label">A 方主張</div>
+        <div class="matrix-cell matrix-value">{{SIDE_A_CLAIM}}</div>
+        <div class="matrix-cell matrix-label">B 方主張</div>
+        <div class="matrix-cell matrix-value">{{SIDE_B_CLAIM}}</div>
+        <div class="matrix-cell matrix-label">確認證據</div>
+        <div class="matrix-cell matrix-value">{{CONFIRMED_EVIDENCE}}</div>
+        <div class="matrix-cell matrix-label">缺失證據</div>
+        <div class="matrix-cell matrix-value">{{MISSING_EVIDENCE}}</div>
+        <div class="matrix-cell matrix-label">社群看法</div>
+        <div class="matrix-cell matrix-value"><span class="badge badge-social">social</span> {{SOCIAL_NARRATIVE}}</div>
+        <div class="matrix-cell matrix-label">後續追蹤</div>
+        <div class="matrix-cell matrix-value">{{NEXT_STEPS}}</div>
+      </div>
+      <div class="matrix-safe">✏️ <strong>安全寫法：</strong>{{SAFE_WORDING}}</div>
+    </div>
+  </section>
+
+  <!-- ⑦ Source Register -->
+  <section id="sources">
+    <h2>來源清單</h2>
+    <div class="source-item">
+      <span class="source-type">primary</span>
+      <div>
+        <div class="source-title"><a href="{{SOURCE_URL_1}}" target="_blank" rel="noopener">{{SOURCE_TITLE_1}}</a></div>
+        <div class="source-meta">{{PUBLISHER_1}} · {{PUBLISHED_AT_1}}</div>
+      </div>
+    </div>
+    <div class="source-item">
+      <span class="source-type">official</span>
+      <div>
+        <div class="source-title"><a href="{{SOURCE_URL_2}}" target="_blank" rel="noopener">{{SOURCE_TITLE_2}}</a></div>
+        <div class="source-meta">{{PUBLISHER_2}} · {{PUBLISHED_AT_2}}</div>
+      </div>
+    </div>
+    <div class="source-item">
+      <span class="source-type">media</span>
+      <div>
+        <div class="source-title"><a href="{{SOURCE_URL_3}}" target="_blank" rel="noopener">{{SOURCE_TITLE_3}}</a></div>
+        <div class="source-meta">{{PUBLISHER_3}} · {{PUBLISHED_AT_3}}</div>
+      </div>
+    </div>
+    <!-- source-type options: primary / official / media / local / social / archive / commentary -->
+  </section>
+
+  <!-- ⑧ Social Narrative -->
+  <section id="social">
+    <h2>社群敘事分析</h2>
+    <div class="callout callout-yellow">
+      ⚠️ 以下內容反映社群討論，不代表已確認事實。病毒式傳播不等於真實。
+    </div>
+    <h3>主流敘事</h3>
+    <p><span class="badge badge-social">social</span> {{DOMINANT_SOCIAL_NARRATIVE}}</p>
+    <h3>支撐此敘事的證據</h3>
+    <p>{{EVIDENCE_SUPPORTING_NARRATIVE}}</p>
+    <h3>與事實層的落差</h3>
+    <p>{{GAPS_BETWEEN_SOCIAL_AND_FACTS}}</p>
+  </section>
+
+  <!-- ⑨ Open Questions -->
+  <section id="openq">
+    <h2>未決問題</h2>
+    <div class="oq-item">
+      <div class="oq-q">1. {{OPEN_QUESTION_1}}</div>
+      <div class="oq-detail">
+        <strong>為何重要：</strong>{{WHY_MATTERS_1}}<br>
+        <strong>需要什麼：</strong>{{EVIDENCE_NEEDED_1}}<br>
+        <strong>監控位置：</strong>{{WHERE_TO_MONITOR_1}}
+      </div>
+    </div>
+    <div class="oq-item">
+      <div class="oq-q">2. {{OPEN_QUESTION_2}}</div>
+      <div class="oq-detail">
+        <strong>為何重要：</strong>{{WHY_MATTERS_2}}<br>
+        <strong>需要什麼：</strong>{{EVIDENCE_NEEDED_2}}<br>
+        <strong>監控位置：</strong>{{WHERE_TO_MONITOR_2}}
+      </div>
+    </div>
+  </section>
+
+  <!-- ⑩ Caveats -->
+  <section id="caveats">
+    <h2>注意事項與免責聲明</h2>
+    <div class="callout callout-red">
+      <strong>Publication Caveats</strong><br>
+      {{PUBLICATION_CAVEATS}}
+    </div>
+    <h3>建議後續報導方向</h3>
+    <ul style="padding-left:1.2em;color:#94a3b8;font-size:.88rem">
+      <li>{{NEXT_REPORTING_STEP_1}}</li>
+      <li>{{NEXT_REPORTING_STEP_2}}</li>
+      <li>{{NEXT_REPORTING_STEP_3}}</li>
+    </ul>
+  </section>
+
+</main>
+
+<footer>
+  本頁為獨立研究整理，不代表任何一方立場，不構成法律、醫療或財務建議。<br>
+  所有主張均標記來源與信心等級。如有錯誤或補充，歡迎來信。<br>
+  最後更新：{{LAST_UPDATED}}
+</footer>
+
+</body>
+</html>

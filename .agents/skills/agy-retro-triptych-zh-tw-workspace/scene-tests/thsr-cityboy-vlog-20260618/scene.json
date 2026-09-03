@@ -1,0 +1,9 @@
+{
+  "scene_name": "thsr-cityboy-vlog",
+  "source_request": "主場景一個男子坐在行駛中的台灣高鐵窗邊，旁邊有一杯手搖茶飲，座位小桌上有一杯手搖茶飲，桌上有 MacBook，男子在構思自己下一個 vlog 影片的企劃，男子大致是 cityboy 的打扮，寬褲",
+  "assumptions": [
+    "Preserve the existing muted retro night triptych style DNA.",
+    "Interpret the scene as an evening or night Taiwan High Speed Rail ride so it matches the current style family.",
+    "Keep the laptop visually close to a MacBook vibe but avoid visible logos or text."
+  ]
+}
